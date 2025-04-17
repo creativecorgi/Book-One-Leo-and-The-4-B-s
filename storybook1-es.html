@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Leo and the 4 B's</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 2em;
+      font-family: sans-serif;
+      background-color: white;
+      color: black;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    img {
+      max-width: 90%;
+      max-height: 70vh;
+      height: auto;
+      display: block;
+      margin-bottom: 2em;
+    }
+    button {
+      padding: 1em 2em;
+      font-size: 1.2em;
+      background-color: #ffd966;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #ffcc33;
+    }
+    
+    #quizScreen {
+      background-color: #074582;
+      color: white;
+      min-height: 100vh;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 2em;
+      position: relative;
+    }
+
+    /* Quiz layout: two answers per row */
+    #quizContainer > div {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    #quizContainer > div p {
+      flex-basis: 100%;
+    }
+    #quizContainer > div button {
+      flex: 1 1 calc(50% - 1em);
+      margin: 0.5em;
+    }
+    
+    /* Bounce effect on Quiz Time image */
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    /* Zoom effect */
+    @keyframes zoom {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+    }
+    #quizTimeImg {
+      animation: bounce 2s ease-in-out infinite, zoom 3s ease-in-out infinite;
+    }
+    /* Center story page content */
+    #pageContent {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="startScreen" style="display: flex; flex-direction: column; align-items: center;">
+    <img src="Images/cover.png" alt="Story Cover" />
+    <div style="margin-top: 2em;">
+      <button onclick="startStory()">Haz clic aquí para comenzar</button>
+    </div>
+  </div>
+
+  <div id="storyScreen" style="display: none; flex-direction: column; align-items: center;">
+    <div id="pageContent"></div>
+    <div style="margin-top: 2em; display: flex; justify-content: center; gap: 1em;">
+      <button onclick="prevPage()">Página anterior</button>
+      <button onclick="readForMe()">Leer para mí</button>
+      <button onclick="nextPage()">Página siguiente</button>
+    </div>
+    <audio id="pageAudio"></audio>
+  </div>
+
+  <div id="quizScreen">
+    <audio id="quizAudio" src="Audio/quiztimeDKC2song.mp3" loop></audio>
+    <div id="audioControls" style="position:absolute; top:1em; left:1em; display:flex; align-items:center; gap:0.5em; z-index:100;">
+      <button id="quizAudioToggle" style="padding:0.5em 1em;">Pausar música</button>
+      <input type="range" id="quizVolume" min="0" max="1" step="0.01" value="0.2"/>
+      <label for="quizVolume" style="color:white; margin:0;">Volumen</label>
+    </div>
+    <img id="quizTimeImg" src="Images/quiztime.png" alt="Quiz Time" style="max-width: 300px; margin: 0.5em 0;" />
+    <p id="quizScore" style="font-weight: bold; margin-bottom: 1em;">Score: 0 / 10</p>
+    <div id="quizContainer" style="max-width: 800px; text-align: left;"></div>
+  </div>
+
+  <script>
+    const pages = [
+      {
+        image: "Images/leo_page1.png",
+        text: `En lo profundo de la selva, un joven cachorro de león escuchó música y risas que se deslizaban entre los árboles.<br>
+Curioso, siguió el sonido y se encontró con algo que nunca había visto antes: ¡una escuela!<br>
+En el techo, pintado con letras grandes y llamativas, vio: “Los Leones de Lowell Aman Aprender.”<br>
+“¿Leones? ¿Aprender?” susurró, inclinando la cabeza.<br>
+“¡Yo soy un león… y sí que me encanta aprender!”`,
+        audio: "Audio/Page1AudioSP.wav"
+      },
+      {
+        image: "Images/leo_page2.png",
+        text: `Leo se acercó sigilosamente y leyó un gran letrero cerca de la entrada: Lowell Elementary.<br>
+Sus ojos brillaron. “Parece divertido… tal vez pueda aprender algo aquí,” pensó.<br>
+Justo en ese momento, las puertas se abrieron y los niños salieron riendo y charlando.<br>
+Un niño lo vio y dijo: “¡Hola!”<br>
+Leo sonrió tímidamente. “Hola… me llamo Leo. Vi su letrero en el techo y quise saber más.”`,
+        audio: "Audio/Page2AudioSP.wav"
+      },
+      {
+        image: "Images/leo_page3.png",
+        text: `Los niños sonrieron. “¡Bienvenido, Leo! Esta es nuestra escuela — ¿quieres ver lo que hacemos?”<br>
+Leo asintió con entusiasmo. “¡Sí, por favor! Quiero aprender todo.”<br>
+“Te mostraremos todo y te enseñaremos algo muy importante,” dijo un estudiante.<br>
+“Se llama las 4 B’s — así es como nos cuidamos unos a otros aquí.”<br>
+Las orejas de Leo se levantaron. “¡Eso suena importante!”`,
+        audio: "Audio/Page3AudioSP.wav"
+      },
+      {
+        image: "Images/leo_page4.png",
+        text: `Dentro del pasillo, Leo vio cuatro palabras grandes y llamativas en la pared:<br>
+Sé Seguro, Sé Respetuoso, Sé Responsable, Sé Listo.<br>
+Cada una estaba pintada con colores brillantes y dibujos divertidos.<br>
+“Estas son las 4 B’s,” explicó una maestra. “Nos ayudan a aprender y crecer juntos.”<br>
+Leo leyó las palabras en voz alta. “Sé Seguro… Sé Respetuoso… Sé Responsable… Sé Listo.”`,
+        audio: "Audio/Page4AudioSP.wav"
+      },
+      {
+        image: "Images/leo_page5.png",
+        text: `Los estudiantes le mostraron a Leo cómo caminaban en una fila silenciosa por el pasillo.<br>
+“Mantenemos nuestras manos y pies con nosotros y nos movemos con cuidado,” dijo alguien.<br>
+Leo los observó detenerse en cada puerta y esperar su turno para entrar.<br>
+“Ser seguro ayuda a que todos se sientan tranquilos y protegidos,” dijo la maestra.<br>
+Leo practicó caminar con seguridad y sonrió. “¡Eso se siente bien!”`,
+        audio: "Audio/Page5AudioSP.wav"
+      },
+      {
+        image: "Images/leo_page6.png",
+        text: `En el aula, Leo vio a los niños levantar la mano antes de hablar.<br>
+Escuchaban en silencio mientras otros hablaban y usaban palabras amables.<br>
+“Respetar significa tratar a los demás como nos gustaría que nos trataran,” dijo un estudiante.<br>
+“Incluso cuando no estamos de acuerdo, nos mantenemos tranquilos y amables.”<br>
+Leo asintió. “Eso hace que todos se sientan importantes.”`,
+        audio: "Audio/Page6AudioSP.wav"
+      },
+      {
+        image: "Images/leo_page7.png",
+        text: `En el área del almuerzo, Leo notó que los niños limpiaban después de sí mismos.<br>
+Algunos estudiantes incluso ayudaban a sus amigos a cargar las charolas o limpiar derrames.<br>
+“Ser responsable significa hacer lo correcto, incluso cuando nadie está mirando,” explicó un estudiante.<br>
+“Cuidamos nuestro espacio, nuestras cosas y nuestro aprendizaje.”<br>
+Leo ayudó a limpiar una mesa y se sintió orgulloso de sus acciones.`,
+        audio: "Audio/Page7AudioSP.wav"
+      },
+      {
+        image: "Images/leo_page8.png",
+        text: `Afuera, los estudiantes se formaban rápidamente cuando sonaba la campana.<br>
+“Estar listo significa tener lo que necesitas y escuchar cuando es hora de comenzar,” dijo la maestra.<br>
+Leo notó cómo los estudiantes tenían sus mochilas, lápices y grandes orejas atentas.<br>
+“Estar listos nos ayuda a aprender más y sentirnos menos estresados,” compartió un estudiante.<br>
+Leo revisó sus patas y dijo, “¡Yo también estoy listo!”`,
+        audio: "Audio/Page8AudioSP.wav"
+      },
+      {
+        image: "Images/leo_page9.png",
+        text: `De regreso en el aula, Leo dijo, “Creo que ya entiendo las 4 B’s.”<br>
+“¡Sé Seguro, Sé Respetuoso, Sé Responsable y Sé Listo!”<br>
+Los niños aplaudieron y lo felicitaron.<br>
+La maestra le dio a Leo una Insignia Especial de León de Lowell por aprender las reglas.<br>
+“¡Gracias por enseñarme!” dijo Leo con una gran sonrisa.`,
+        audio: "Audio/Page9AudioSP.wav"
+      },
+      {
+        image: "Images/leo_page10.png",
+        text: `“Ahora eres parte de nuestra familia Lowell,” dijo la maestra con calidez.<br>
+Leo miró a todas las caras sonrientes.<br>
+“Prometo hacer mi mejor esfuerzo para seguir las 4 B’s todos los días,” prometió.<br>
+Todos le dieron un gran abrazo grupal.<br>
+Desde ese día, Leo se sintió orgulloso de ser un León de Lowell.`,
+        audio: "Audio/Page10AudioSP.wav"
+      },
+      {
+        image: "Images/quiz_placeholder.png",
+        text: `<strong>¡Es hora del cuestionario!</strong><br>Pon a prueba lo que recuerdas de la aventura de Leo respondiendo las siguientes preguntas.`,
+        audio: ""
+      }
+    ];
+
+    const quizQuestions = [
+      {
+        question: "¿Qué escuchó Leo en la selva?",
+        choices: ["Una tormenta", "Música y risas", "Otros leones", "La campana de la escuela"],
+        answer: 1
+      },
+      {
+        question: "¿Qué estaba escrito en el techo de la escuela?",
+        choices: ["Aprender es divertido", "Los Leones de Lowell Aman Aprender", "La escuela de Leo", "Sé Seguro"],
+        answer: 1
+      },
+      {
+        question: "¿Qué le mostraron los niños a Leo?",
+        choices: ["El patio de recreo", "Las 4 B’s", "El comedor", "La biblioteca"],
+        answer: 1
+      },
+      {
+        question: "¿Cuál de estos NO es una de las 4 B’s?",
+        choices: ["Sé Seguro", "Sé Respetuoso", "Sé Valiente", "Sé Listo"],
+        answer: 2
+      },
+      {
+        question: "¿Qué significa 'Sé Seguro' en la historia?",
+        choices: ["Correr por los pasillos", "Mantener las manos para uno mismo", "Gritar fuerte", "Tocar todo"],
+        answer: 1
+      },
+      {
+        question: "¿Cómo muestran respeto los estudiantes?",
+        choices: ["Interrumpiendo a los demás", "Levantando la mano", "Gritando respuestas", "Corriendo por ahí"],
+        answer: 1
+      },
+      {
+        question: "¿Qué hizo Leo para ser responsable?",
+        choices: ["Vio televisión", "Tomó una siesta", "Limpiar una mesa", "Comió rápido"],
+        answer: 2
+      },
+      {
+        question: "¿Qué significa 'Sé Listo'?",
+        choices: ["Tener bocadillos", "Traer material y escuchar", "Irse temprano a casa", "Usar zapatos"],
+        answer: 1
+      },
+      {
+        question: "¿Qué recibió Leo de la maestra?",
+        choices: ["Una estrella de oro", "Una Insignia de León de Lowell", "Un lápiz", "Una calcomanía"],
+        answer: 1
+      },
+      {
+        question: "¿Qué prometió hacer Leo?",
+        choices: ["Jugar más juegos", "Seguir las 4 B’s todos los días", "Comer en silencio", "Tomar más siestas"],
+        answer: 1
+      }
+    ];
+
+    let currentPage = 0;
+
+    function startStory() {
+      document.getElementById("startScreen").style.display = "none";
+      document.getElementById("storyScreen").style.display = "flex";
+      loadPage(currentPage);
+    }
+
+    function loadPage(index) {
+      const page = pages[index];
+      const container = document.getElementById("pageContent");
+      container.innerHTML = `
+        <img src="${page.image}" alt="Story Image" />
+        <p style="max-width: 900px; text-align: center; line-height: 1.6; padding: 0 1em;">${page.text}</p>
+      `;
+      const audio = document.getElementById("pageAudio");
+      audio.src = page.audio;
+      audio.pause();
+      audio.currentTime = 0;
+    }
+
+    function loadQuiz() {
+      const container = document.getElementById("quizContainer");
+      const scoreDisplay = document.getElementById("quizScore");
+      container.innerHTML = "";
+      let score = 0;
+      quizQuestions.forEach((q, index) => {
+        const qDiv = document.createElement("div");
+        qDiv.innerHTML = `<p><strong>Q${index + 1}:</strong> ${q.question}</p>`;
+        q.choices.forEach((choice, i) => {
+          const btn = document.createElement("button");
+          btn.textContent = choice;
+          btn.style.margin = "0.25em";
+          btn.onclick = () => {
+            // Only allow one answer per question
+            if (qDiv.classList.contains("answered")) return;
+            // Mark correct or wrong
+            if (i === q.answer) {
+              btn.style.backgroundColor = "#a2e59f";
+              score++;
+            } else {
+              btn.style.backgroundColor = "#f7a4a4";
+            }
+            // Prevent further clicks for this question
+            qDiv.classList.add("answered");
+            scoreDisplay.textContent = `Score: ${score} / ${quizQuestions.length}`;
+          };
+          qDiv.appendChild(btn);
+        });
+        container.appendChild(qDiv);
+        container.appendChild(document.createElement("hr"));
+      });
+    }
+
+    function prevPage() {
+      if (currentPage === 0) {
+        document.getElementById("storyScreen").style.display = "none";
+        document.getElementById("startScreen").style.display = "flex";
+      } else {
+        currentPage--;
+        loadPage(currentPage);
+        document.body.style.backgroundColor = "white";
+        document.body.style.color = "black";
+      }
+      stopAudio();
+    }
+
+    function nextPage() {
+      if (currentPage < pages.length - 1) {
+        currentPage++;
+        if (currentPage === pages.length - 1) {
+          document.getElementById("storyScreen").style.display = "none";
+          document.getElementById("quizScreen").style.display = "flex";
+          document.body.style.backgroundColor = "#074582";
+          document.body.style.color = "white";
+          loadQuiz();
+          playQuizMusic();
+        } else {
+          loadPage(currentPage);
+        }
+      }
+      stopAudio();
+    }
+
+    function readForMe() {
+      const audio = document.getElementById("pageAudio");
+      audio.currentTime = 0;
+      audio.play();
+    }
+
+    function stopAudio() {
+      const audio = document.getElementById("pageAudio");
+      audio.pause();
+      audio.currentTime = 0;
+    }
+
+    // Play/pause toggle for quiz background music
+    const quizAudio = document.getElementById('quizAudio');
+    const quizAudioToggle = document.getElementById('quizAudioToggle');
+    quizAudioToggle.onclick = () => {
+      if (quizAudio.paused) {
+        quizAudio.play();
+        quizAudioToggle.textContent = 'Pausar música';
+      } else {
+        quizAudio.pause();
+        quizAudioToggle.textContent = 'Reproducir música';
+      }
+    };
+
+    // Set default volume to 20%
+    quizAudio.volume = 0.2;
+
+    // Wire up volume slider
+    const quizVolume = document.getElementById('quizVolume');
+    quizVolume.oninput = () => {
+      quizAudio.volume = parseFloat(quizVolume.value);
+    };
+
+    // Start quiz music when quiz screen loads
+    function playQuizMusic() {
+      quizAudio.currentTime = 0;
+      quizAudio.play();
+    }
+  </script>
+</body>
+</html>
